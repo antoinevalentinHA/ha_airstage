@@ -169,24 +169,38 @@ class AirstageAC(AirstageAcEntity, ClimateEntity):
     @property
     def target_temperature(self) -> float | None:
         """Return the current target temperature."""
-        target_temp = self._ac.get_target_temperature()
+        try:
+            target_temp = self._ac.get_target_temperature()
+        except (TypeError, ValueError):
+            return self.current_temperature
+
         if (
             self.hvac_mode == HVACMode.FAN_ONLY
             or target_temp is None
             or int(target_temp) >= 6000
         ):
             return self.current_temperature
+
         return target_temp
 
     @property
-    def min_temp(self) -> float | None:
-        """Return the minimum temperature for the current mode."""
-        return self._ac.get_minimum_temperature() or constants.ACConstants.COOL_MIN_TEMP
+    def min_temp(self):
+        try:
+            value = self._ac.get_minimum_temperature()
+        except (TypeError, ValueError):
+            value = None
+
+        return value or constants.ACConstants.COOL_MIN_TEMP
 
     @property
     def max_temp(self) -> float | None:
         """Return the maximum temperature for the current mode."""
-        return self._ac.get_maximum_temperature() or constants.ACConstants.HEAT_MAX_TEMP
+        try:
+            value = self._ac.get_maximum_temperature()
+        except (TypeError, ValueError):
+            value = None
+
+        return value or constants.ACConstants.HEAT_MAX_TEMP
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
@@ -207,20 +221,36 @@ class AirstageAC(AirstageAcEntity, ClimateEntity):
     @property
     def current_temperature(self) -> float | None:
         """Return the current temperature."""
-        return self._ac.get_display_temperature()
+        try:
+            return self._ac.get_display_temperature()
+        except KeyError:
+            return None
 
     @property
     def hvac_mode(self) -> HVACMode | None:
         """Return the current HVAC modes."""
-        om = self._ac.get_operating_mode()
+        try:
+            om = self._ac.get_operating_mode()
+        except (TypeError, ValueError):
+            return HVACMode.OFF
+
         if om:
-            return FUJITSU_TO_HA_STATE[om]
+            return FUJITSU_TO_HA_STATE.get(om, HVACMode.OFF)
+
         return HVACMode.OFF
 
     @property
     def fan_mode(self) -> str | None:
         """Return the current fan modes."""
-        return FUJITSU_FAN_TO_HA[self._ac.get_fan_speed()]
+        try:
+            fan = self._ac.get_fan_speed()
+        except (TypeError, ValueError):
+            return None
+
+        if fan is None:
+            return None
+
+        return FUJITSU_FAN_TO_HA.get(fan)
 
     @property
     def swing_mode(self) -> str | None:

@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import timedelta
 
-import aiohttp
 import pyairstage.airstageApi as airstage_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -18,17 +16,17 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady, PlatformNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import (
+    ConfigEntryError,
+    DataUpdateCoordinator,
+)
 
 from .const import (
     AIRSTAGE_LOCAL_RETRY,
-    AIRSTAGE_LOCAL_TIMEOUT_SECONDS,
     AIRSTAGE_RETRY,
     AIRSTAGE_SYNC_INTERVAL,
     AIRSTAGE_SYNC_LOCAL_INTERVAL,
-    CONF_USE_HTTPS,
     DOMAIN,
 )
 from .models import AirstageData
@@ -70,9 +68,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             try:
                 return await apiCloud.get_devices()
             except airstage_api.ApiError as err:
-                raise PlatformNotReady(
-                    f"Connection error while connecting to Fujitsu Cloud: {err}"
-                ) from err
+                raise ConfigEntryError(err) from err
 
         coordinator = DataUpdateCoordinator(
             hass,
@@ -88,43 +84,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     if CONF_DEVICE_ID in entry.data:
-        device_id = entry.data[CONF_DEVICE_ID]
-        device_ip = entry.data[CONF_IP_ADDRESS]
-        use_https = entry.data.get(CONF_USE_HTTPS, False)
         apiLocal = airstage_api.ApiLocal(
             session=async_get_clientsession(hass),
             retry=AIRSTAGE_LOCAL_RETRY,
-            timeout_seconds=AIRSTAGE_LOCAL_TIMEOUT_SECONDS,
-            device_id=device_id,
-            ip_address=device_ip,
-            use_https=use_https,
+            device_id=entry.data[CONF_DEVICE_ID],
+            ip_address=entry.data[CONF_IP_ADDRESS],
         )
 
         hass.data.setdefault(
             DOMAIN,
             {
-                CONF_DEVICE_ID: device_id,
-                CONF_IP_ADDRESS: device_ip,
-                CONF_USE_HTTPS: use_https,
+                CONF_DEVICE_ID: entry.data[CONF_DEVICE_ID],
+                CONF_IP_ADDRESS: entry.data[CONF_IP_ADDRESS],
             },
         )
 
         async def async_get():
             try:
                 return await apiLocal.get_devices()
-            except (
-                airstage_api.ApiError,
-                asyncio.TimeoutError,
-                aiohttp.ServerTimeoutError,
-            ) as err:
-                raise ConfigEntryNotReady(
-                    f"Connection error while connecting to {device_ip}: {err}"
+            except airstage_api.ApiError as err:
+                raise ConfigEntryError(
+                    f"Timeout while connecting to device for data {entry.data} and options {entry.options}"
                 ) from err
 
         coordinator = DataUpdateCoordinator(
             hass,
             _LOGGER,
-            name=f"Fujitsu Airstage {device_id}",
+            name="Fujitsu Airstage",
             update_method=async_get,
             update_interval=timedelta(seconds=AIRSTAGE_SYNC_LOCAL_INTERVAL),
         )

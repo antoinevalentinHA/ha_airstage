@@ -146,9 +146,17 @@ class AirstageEnergySaveFanSwitch(AirstageAcEntity, SwitchEntity):
         self._attr_unique_id += "-energy-save"
 
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
         """Return the energy saving fan status."""
-        return self._ac.get_energy_save_fan() == constants.BooleanDescriptors.ON
+        try:
+            state = self._ac.get_energy_save_fan()
+        except (TypeError, ValueError):
+            return None
+
+        if state is None:
+            return None
+
+        return state == constants.BooleanDescriptors.ON
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn energy saving fan on."""
@@ -174,9 +182,17 @@ class AirstageQuietFanSwitch(AirstageAcEntity, SwitchEntity):
         self._attr_unique_id += "-quiet"
 
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
         """Return the quiet fan status."""
-        return self._ac.get_fan_speed() == constants.FanSpeedDescriptors.QUIET
+        try:
+            speed = self._ac.get_fan_speed()
+        except (TypeError, ValueError):
+            return None
+
+        if speed is None:
+            return None
+
+        return speed == constants.FanSpeedDescriptors.QUIET
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn quiet fan on."""
@@ -235,9 +251,17 @@ class AirstagePowerSwitch(AirstageAcEntity, SwitchEntity):
         self._attr_unique_id += "-power"
 
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
         """Return the power status."""
-        return self._ac.get_device_on_off_state() == constants.BooleanDescriptors.ON
+        try:
+            state = self._ac.get_device_on_off_state()
+        except (TypeError, ValueError):
+            return None
+
+        if state is None:
+            return None
+
+        return state == constants.BooleanDescriptors.ON
 
     @property
     def icon(self) -> str:

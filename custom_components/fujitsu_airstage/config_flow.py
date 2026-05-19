@@ -27,7 +27,6 @@ from .const import (
     CONF_LOCAL,
     CONF_SELECT_POLLING,
     CONF_TURN_ON_BEFORE_SET_TEMP,
-    CONF_USE_HTTPS,
     DOMAIN,
 )
 
@@ -35,7 +34,6 @@ _LOGGER = logging.getLogger(__name__)
 
 IP_SCHEMA = {
     vol.Required(CONF_IP_ADDRESS): str,
-    vol.Optional(CONF_USE_HTTPS, default=False): bool,
 }
 
 LOCAL_DATA_SCHEMA = IP_SCHEMA | {
@@ -105,9 +103,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         for entry in self._async_current_entries():
             if entry.data.get(CONF_DEVICE_ID) == mac.replace(":", "").upper():
-                # Device is already configured, check if IP or use_https changed
+                # Device is already configured, check if IP changed
                 old_ip = entry.data.get(CONF_IP_ADDRESS)
-                old_use_https = entry.data.get(CONF_USE_HTTPS)
 
                 if old_ip != ip:
                     _LOGGER.info(
@@ -119,7 +116,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     new_data = {
                         **entry.data,
                         CONF_IP_ADDRESS: ip,
-                        CONF_USE_HTTPS: use_https,
                     }
                     self.hass.config_entries.async_update_entry(
                         entry,
@@ -132,7 +128,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         user_data = {
             CONF_DEVICE_ID: device_id,
             CONF_IP_ADDRESS: ip,
-            CONF_USE_HTTPS: use_https,
         }
 
         # Test to see if we can connect to the device
@@ -142,7 +137,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 retry=AIRSTAGE_LOCAL_RETRY,
                 device_id=user_data[CONF_DEVICE_ID],
                 ip_address=user_data[CONF_IP_ADDRESS],
-                use_https=user_data[CONF_USE_HTTPS],
             )
             if not await hub.get_parameters(["iu_model"]):
                 return self.async_abort(reason="not_a_fujitsu_airstage")
@@ -197,7 +191,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         retry=AIRSTAGE_LOCAL_RETRY,
                         device_id=user_input[CONF_DEVICE_ID],
                         ip_address=user_input[CONF_IP_ADDRESS],
-                        use_https=user_input[CONF_USE_HTTPS],
                     )
 
                     if not await hub.get_parameters(["iu_model"]):
@@ -293,7 +286,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             retry=AIRSTAGE_LOCAL_RETRY,
                             device_id=user_input[CONF_DEVICE_ID],
                             ip_address=user_input[CONF_IP_ADDRESS],
-                            use_https=user_input[CONF_USE_HTTPS],
                         )
 
                         if not await hub.get_parameters(["iu_model"]):
