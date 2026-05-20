@@ -16,9 +16,11 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import (
+    DataUpdateCoordinator,
+    UpdateFailed,
+)
 
 from .const import (
     AIRSTAGE_LOCAL_RETRY,
@@ -66,7 +68,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             try:
                 return await apiCloud.get_devices()
             except airstage_api.ApiError as err:
-                raise ConfigEntryNotReady(
+                raise UpdateFailed(
                     f"Airstage cloud API not reachable: {err}"
                 ) from err
 
@@ -103,7 +105,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             try:
                 return await apiLocal.get_devices()
             except airstage_api.ApiError as err:
-                raise ConfigEntryNotReady(
+                raise UpdateFailed(
                     f"Local Airstage device {entry.data[CONF_DEVICE_ID]} "
                     f"at {entry.data[CONF_IP_ADDRESS]} not reachable: {err}"
                 ) from err
