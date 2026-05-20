@@ -103,8 +103,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             try:
                 return await apiLocal.get_devices()
             except airstage_api.ApiError as err:
-                raise ConfigEntryError(
-                    f"Timeout while connecting to device for data {entry.data} and options {entry.options}"
+                raise ConfigEntryNotReady(
+                    f"Local Airstage device {entry.data[CONF_DEVICE_ID]} "
+                    f"at {entry.data[CONF_IP_ADDRESS]} not reachable: {err}"
                 ) from err
 
         coordinator = DataUpdateCoordinator(
