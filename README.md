@@ -1,3 +1,11 @@
+> **Maintained fork.** This fork is loaded by a production Home Assistant installation
+> ([Arsenal](https://github.com/antoinevalentinHA/arsenal)) and is kept in working order for that reason.
+> Served branch: `arsenal-stable`, pinned to pyairstage 2.4.x. Upstream: [`danielkaldheim/ha_airstage`](https://github.com/danielkaldheim/ha_airstage).
+> Fixes are proposed upstream whenever upstream can take them.
+> Original upstream README follows.
+
+---
+
 # Fujitsu Airstage Home Assistant component
 
 ![Version](https://img.shields.io/github/v/release/danielkaldheim/ha_airstage?style=for-the-badge)
