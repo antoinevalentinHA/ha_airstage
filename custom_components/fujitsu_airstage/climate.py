@@ -290,19 +290,31 @@ class AirstageAC(AirstageAcEntity, ClimateEntity):
     @property
     def swing_modes(self) -> list[str] | None:
         """Return swing modes if supported."""
-        if self.swing_mode:
+        if not self.swing_mode:
+            return None
+
+        try:
             total_positions = self._ac.get_num_vertical_swing_positions()
-            if total_positions == 8:
-                return SWING_MODES_8
-            elif total_positions == 6:
-                return SWING_MODES_6
-            elif total_positions == 4:
-                return SWING_MODES_4
-            else:
-                raise ValueError(
-                    f"Unknown number of vertical swing positions ({total_positions}). Only 4, 6, and 8 are supported."
-                )
-        return None
+        except (TypeError, ValueError):
+            # get_num_vertical_swing_positions() calls int() on a cached
+            # parameter that is None while absent from a partial poll (#89
+            # family). A property must not raise: an exception here breaks the
+            # entity's whole state write, not just this attribute.
+            _LOGGER.debug("Could not determine the number of swing positions")
+            return None
+
+        modes = {4: SWING_MODES_4, 6: SWING_MODES_6, 8: SWING_MODES_8}.get(
+            total_positions
+        )
+        if modes is None:
+            # Same reasoning: report "no swing modes" rather than raising on a
+            # position count the mode tables do not cover.
+            _LOGGER.debug(
+                "Unsupported number of vertical swing positions (%s); "
+                "only 4, 6 and 8 are mapped",
+                total_positions,
+            )
+        return modes
 
     @property
     def preset_mode(self) -> str | None:

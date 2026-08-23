@@ -166,8 +166,18 @@ class AirstageAcEntity(AirstageEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        devices = self.instance.coordinator.data
+        """Expose the device's raw parameters.
+
+        Read defensively: the coordinator can hold no data at all (first
+        refresh not through yet) or a payload without this device, and an
+        exception raised here breaks the entity's whole state write.
+        """
+        devices = self.coordinator.data
+        if not devices or self.ac_key not in devices:
+            return {}
+
         return {
-            str(x["name"]).replace("iu_", ""): x["value"]
-            for x in devices[self.ac_key]["parameters"]
+            str(name).replace("iu_", ""): parameter.get("value")
+            for parameter in devices[self.ac_key].get("parameters", [])
+            if (name := parameter.get("name")) is not None
         }
